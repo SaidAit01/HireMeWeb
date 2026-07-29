@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar"; // <-- Import it here
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,6 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // Let's also update the metadata to match your new brand!
   title: "HireMeWeb | Standout Portfolios for Grads",
   description: "Launch your career with a professional portfolio website.",
 };
@@ -27,9 +27,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning // <-- Add this exactly like this (camelCase)
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Navbar /> {/* <-- Render it above your children */}
+        {children}
+      </body>
     </html>
   );
 }
