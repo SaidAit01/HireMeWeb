@@ -1,9 +1,8 @@
-"import client";
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase"; // Ensure this path is correct
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -11,14 +10,19 @@ export default function OnboardingPage() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Form State
+  // Core Account State
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [tierId, setTierId] = useState("2"); // Default to Standard (£199)
+  const [personalEmail, setPersonalEmail] = useState(""); // Permanent login
+  const [tierId, setTierId] = useState("2"); // Defaults to Standard (£199)
+
+  // Discount Verification State
+  const [uniEmail, setUniEmail] = useState("");
+  const [gradYear, setGradYear] = useState("");
+
+  // Portfolio Content State
   const [designPreferences, setDesignPreferences] = useState("");
   const [education, setEducation] = useState("");
   const [experience, setExperience] = useState("");
-  const [projects, setProjects] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,27 +30,28 @@ export default function OnboardingPage() {
     setErrorMsg("");
 
     try {
-      // 1. Basic validation for student email
-      if (!email.endsWith(".ac.uk") && !email.includes("student")) {
-        // We can give a soft warning or just require a note, but let's allow it with a check or proceed
+      // 1. Validate the .ac.uk email if they are claiming the student discount
+      if (tierId !== "3" && !uniEmail.endsWith(".ac.uk")) {
+        throw new Error(
+          "A valid .ac.uk email is required to claim the 50% graduate discount.",
+        );
       }
 
-      // 2. Insert User into Supabase
+      // 2. Insert User into Supabase (Using PERSONAL email for their permanent account)
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .insert([{ full_name: fullName, email: email }])
+        .insert([{ full_name: fullName, email: personalEmail }])
         .select()
         .single();
 
       if (userError) throw userError;
-      const userId = userData.id;
 
-      // 3. Create an Order linked to the User and Tier
+      // 3. Create the Order
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert([
           {
-            user_id: userId,
+            user_id: userData.id,
             tier_id: parseInt(tierId),
             payment_status: "pending",
           },
@@ -55,22 +60,20 @@ export default function OnboardingPage() {
         .single();
 
       if (orderError) throw orderError;
-      const orderId = orderData.id;
 
-      // 4. Insert Portfolio Content
-      const resumeJson = {
-        education,
-        experience,
-        projects,
-      };
-
+      // 4. Insert Portfolio Content (including the uni email for your records)
       const { error: contentError } = await supabase
         .from("portfolio_content")
         .insert([
           {
-            order_id: orderId,
+            order_id: orderData.id,
             design_preferences: designPreferences,
-            resume_data: resumeJson,
+            resume_data: JSON.stringify({
+              uni_email_verification: uniEmail,
+              graduation_year: gradYear,
+              education: education,
+              experience: experience,
+            }),
           },
         ]);
 
@@ -90,24 +93,23 @@ export default function OnboardingPage() {
 
   if (success) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center bg-gray-50 px-6 py-24">
+      <main className="flex-1 flex flex-col items-center justify-center bg-gray-50 px-6 py-24 min-h-screen">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 text-green-600 mb-4 font-bold text-xl">
             ✓
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Application Submitted!
+            Application Received
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Thank you, {fullName}. Your details have been securely saved to our
-            database. We will review your submission and reach out via
-            WhatsApp/Email shortly to begin building your portfolio.
+            Thank you, {fullName}. We will review your details and send a secure
+            payment link to <strong>{personalEmail}</strong> shortly.
           </p>
           <button
-            onClick={() => router.push("/")}
-            className="mt-6 w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+            onClick={() => router.push("/dashboard")}
+            className="mt-6 w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
           >
-            Return Home
+            Go to Dashboard
           </button>
         </div>
       </main>
@@ -115,140 +117,166 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="flex-1 bg-gray-50 py-16 px-6 sm:py-24">
-      <div className="max-w-2xl mx-auto bg-white p-8 sm:p-10 rounded-3xl shadow-sm border border-gray-200">
-        <div className="text-center mb-10">
+    <main className="flex-1 bg-gray-50 py-16 px-6 sm:py-24 min-h-screen">
+      <div className="max-w-3xl mx-auto bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-gray-200">
+        <div className="mb-10 border-b border-gray-200 pb-8">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Get Your Portfolio Built
+            Build Your Portfolio
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Fill out your details below to lock in your 50% UK student discount
-            and start your order.
+            Provide your details below. Your personal email will be used for
+            your permanent account access.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 font-medium">
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Full Name
-              </label>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Alex Smith"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Section 1: Core Account Details */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              1. Account Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Personal Email (For Login)
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={personalEmail}
+                  onChange={(e) => setPersonalEmail(e.target.value)}
+                  placeholder="e.g. alex@gmail.com"
+                  className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                University Email (.ac.uk)
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. a.smith@surrey.ac.uk"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
           </div>
 
-          {/* Tier Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Select Package Tier
-            </label>
-            <select
-              value={tierId}
-              onChange={(e) => setTierId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-            >
-              <option value="1">Basic Tier (£99 - Retail £198)</option>
-              <option value="2">
-                Standard Tier (£199 - Retail £398) [Most Popular]
-              </option>
-              <option value="3">Complex Tier (£399 - Retail £798)</option>
-            </select>
-          </div>
-
-          {/* Design Preferences */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Design & Style Preferences
-            </label>
-            <textarea
-              rows={3}
-              value={designPreferences}
-              onChange={(e) => setDesignPreferences(e.target.value)}
-              placeholder="Mention your preferred color scheme, sections you want, or link a style you like..."
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Resume Fields */}
-          <div className="space-y-4 pt-4 border-t border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Resume & Experience Data
+          {/* Section 2: Package & Verification */}
+          <div className="space-y-6 pt-6 border-t border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">
+              2. Package Selection
             </h3>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Education Details
+                Select Tier
+              </label>
+              <select
+                value={tierId}
+                onChange={(e) => setTierId(e.target.value)}
+                className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+              >
+                <option value="1">Basic Tier (£99 Student Rate)</option>
+                <option value="2">Standard Tier (£199 Student Rate)</option>
+                <option value="3">
+                  Complex Tier (£798 Retail - No Discount)
+                </option>
+              </select>
+            </div>
+
+            {/* Conditional Discount Fields */}
+            {tierId !== "3" && (
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 space-y-6">
+                <p className="text-sm text-blue-800 font-medium">
+                  *Student discount requires validation. Valid for current
+                  students and recent graduates (up to 2 years post-graduation).
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900">
+                      University Email (.ac.uk)
+                    </label>
+                    <input
+                      type="email"
+                      required={tierId !== "3"}
+                      value={uniEmail}
+                      onChange={(e) => setUniEmail(e.target.value)}
+                      placeholder="e.g. a.smith@surrey.ac.uk"
+                      className="mt-2 block w-full rounded-md border border-blue-200 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900">
+                      Graduation Year
+                    </label>
+                    <select
+                      required={tierId !== "3"}
+                      value={gradYear}
+                      onChange={(e) => setGradYear(e.target.value)}
+                      className="mt-2 block w-full rounded-md border border-blue-200 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">Select Year</option>
+                      <option value="2026">2026 (Current)</option>
+                      <option value="2025">2025</option>
+                      <option value="2024">2024</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Content */}
+          <div className="space-y-6 pt-6 border-t border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">
+              3. Portfolio Content
+            </h3>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Design Preferences
               </label>
               <textarea
                 rows={2}
-                value={education}
-                onChange={(e) => setEducation(e.target.value)}
-                placeholder="Degree title, university, expected graduation year, grades..."
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={designPreferences}
+                onChange={(e) => setDesignPreferences(e.target.value)}
+                placeholder="Preferred colours, styles, or links to websites you like..."
+                className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Work Experience / Volunteering
+                Experience & Education (Optional)
               </label>
               <textarea
-                rows={3}
+                rows={4}
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                placeholder="Roles, company names, key achievements, responsibilities..."
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Key Projects
-              </label>
-              <textarea
-                rows={3}
-                value={projects}
-                onChange={(e) => setProjects(e.target.value)}
-                placeholder="Project titles, technologies used, descriptions, GitHub/live links..."
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Paste your CV text here, or skip this and upload your PDF in the dashboard later..."
+                className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
-          >
-            {loading ? "Submitting Application..." : "Submit Portfolio Order"}
-          </button>
+          <div className="pt-6 border-t border-gray-100">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-blue-600 px-8 py-4 text-lg font-bold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Processing..." : "Submit Portfolio Order"}
+            </button>
+          </div>
         </form>
       </div>
     </main>
