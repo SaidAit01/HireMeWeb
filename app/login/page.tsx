@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// Ensure this relative path points correctly to your supabase.ts file
+// Double-check this path! If your lib folder is at the root of the project, this path is correct.
 import { supabase } from "../../lib/supabase";
 
 export default function Login() {
@@ -20,14 +20,14 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // This tells Supabase where to send the user after they click the link
+          // Redirects the user straight to their dashboard after clicking the link
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
       if (error) throw error;
 
-      setMessage("Check your university email for the magic link!");
+      setMessage("Check your email for the magic link!");
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || "An unexpected error occurred.");
@@ -45,7 +45,7 @@ export default function Login() {
             Welcome Back
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your .ac.uk email to securely access your student dashboard.
+            Enter your email to securely access your dashboard.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function Login() {
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              University Email Address
+              Email Address
             </label>
             <input
               id="email"
@@ -76,7 +76,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. a.smith@surrey.ac.uk"
+              placeholder="e.g. alex.smith@gmail.com"
               className="block w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
