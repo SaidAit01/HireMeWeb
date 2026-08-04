@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabase"; // Ensure this matches your project structure!
+import { supabase } from "../../lib/supabase";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -15,6 +15,9 @@ export default function Dashboard() {
   // File Upload State
   const [uploading, setUploading] = useState(false);
   const hiddenFileInput = useRef<HTMLInputElement>(null);
+
+  // Checkout State
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // 1. Fetch Auth & Database Info
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function Dashboard() {
       const filePath = `${student.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("documents") // Make sure you created this bucket in Supabase!
+        .from("documents")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
@@ -92,7 +95,34 @@ export default function Dashboard() {
     }
   };
 
-  // 3. Loading Screen
+  // 3. Handle Stripe Checkout
+  const handleCheckout = async () => {
+    try {
+      setCheckoutLoading(true);
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        // Redirect the user to the secure Stripe hosted checkout page
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || "Failed to load checkout");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Something went wrong connecting to the payment gateway.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  // 4. Loading Screen
   if (loading) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center bg-gray-50 min-h-screen">
@@ -166,11 +196,27 @@ export default function Dashboard() {
               <span className="text-gray-400">Final Delivery</span>
             </div>
 
-            <p className="mt-auto text-gray-600 text-sm leading-relaxed">
-              {order?.payment_status === "pending"
-                ? "We have received your details! Please check your email for the secure payment link to activate your build."
-                : "Our team is currently designing your first draft. We will send you a private review link via WhatsApp shortly."}
-            </p>
+            {/* Dynamic Text and Payment Button */}
+            {order?.payment_status === "pending" ? (
+              <div className="mt-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <p className="text-gray-600 text-sm leading-relaxed max-w-md">
+                  Your portfolio build is ready to begin. Please pay the 50%
+                  deposit to secure your slot in our queue.
+                </p>
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
+                  className="whitespace-nowrap bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {checkoutLoading ? "Redirecting..." : "Pay Deposit Securely"}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-auto text-gray-600 text-sm leading-relaxed">
+                Our team is currently designing your first draft. We will send
+                you a private review link via WhatsApp shortly.
+              </p>
+            )}
           </div>
 
           {/* 2. Accent Tile: File Upload */}
@@ -195,7 +241,7 @@ export default function Dashboard() {
             <button
               onClick={handleUploadClick}
               disabled={uploading}
-              className="mt-8 w-full bg-white text-blue-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="mt-8 w-full bg-white text-blue-600 font-bold py-3.5 rounded-xl shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {uploading ? "Uploading..." : "Upload Documents"}
             </button>
