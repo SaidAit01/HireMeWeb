@@ -9,8 +9,8 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  // The strict security gatekeeper
   const ADMIN_EMAIL = "said.aitennecer01@gmail.com";
 
   useEffect(() => {
@@ -26,23 +26,24 @@ export default function AdminDashboard() {
           return;
         }
 
-        // Bouncer logic: If the logged-in user is not you, block them immediately
         if (session.user.email !== ADMIN_EMAIL) {
           setAccessDenied(true);
           setLoading(false);
           return;
         }
 
-        // Fetch all orders with user and tier relationships
+        // We are now fetching the portfolio_content linked to the order as well
         const { data: ordersData, error: ordersError } = await supabase
           .from("orders")
           .select(
             `
             id,
+            user_id,
             payment_status,
             created_at,
-            users ( full_name, email ),
-            tiers ( tier_name )
+            users ( id, full_name, email ),
+            tiers ( tier_name ),
+            portfolio_content ( design_preferences )
           `,
           )
           .order("created_at", { ascending: false });
@@ -60,7 +61,6 @@ export default function AdminDashboard() {
     fetchAdminData();
   }, [router]);
 
-  // Function to instantly update database status
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       const { error } = await supabase
@@ -70,7 +70,6 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // Update local state to reflect the change instantly in the UI
       setOrders(
         orders.map((order) =>
           order.id === orderId
@@ -83,6 +82,45 @@ export default function AdminDashboard() {
       alert("Failed to update the order status.");
     }
   };
+
+  // --- New File Download Logic ---
+  const handleDownloadFiles = async (userId: string) => {
+    try {
+      setDownloadingId(userId);
+
+      // 1. Look inside the client's specific folder in the bucket
+      const { data: files, error: listError } = await supabase.storage
+        .from("documents")
+        .list(`${userId}/`);
+
+      if (listError) throw listError;
+
+      if (!files || files.length === 0) {
+        alert("This client hasn't uploaded any additional files yet.");
+        return;
+      }
+
+      // 2. Generate public URLs and open them
+      for (const file of files) {
+        // Skip hidden system files
+        if (file.name === ".emptyFolderPlaceholder") continue;
+
+        const { data } = supabase.storage
+          .from("documents")
+          .getPublicUrl(`${userId}/${file.name}`);
+
+        if (data?.publicUrl) {
+          window.open(data.publicUrl, "_blank");
+        }
+      }
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to retrieve client files.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+  // -------------------------------
 
   if (loading) {
     return (
@@ -118,7 +156,7 @@ export default function AdminDashboard() {
               Command Centre
             </h1>
             <p className="text-gray-600 mt-2 text-lg">
-              Manage incoming builds and update client statuses.
+              Manage incoming builds and retrieve client assets.
             </p>
           </div>
           <div className="text-sm font-semibold text-gray-500 bg-gray-200 px-4 py-2 rounded-lg">
@@ -131,11 +169,11 @@ export default function AdminDashboard() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-700">
-                  <th className="p-6">Client</th>
-                  <th className="p-6">Tier</th>
+                  <th className="p-6">Client Details</th>
+                  <th className="p-6">Preferences</th>
                   <th className="p-6">Order Date</th>
                   <th className="p-6">Status</th>
-                  <th className="p-6">Actions</th>
+                  <th className="p-6">Assets</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -144,6 +182,7 @@ export default function AdminDashboard() {
                     key={order.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
+                    {/* Client Name & Tier */}
                     <td className="p-6">
                       <p className="font-bold text-gray-900">
                         {order.users?.full_name}
@@ -151,26 +190,23 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500">
                         {order.users?.email}
                       </p>
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded">
+                        {order.tiers?.tier_name}
+                      </span>
                     </td>
-                    <td className="p-6 font-medium text-gray-700">
-                      {order.tiers?.tier_name}
+
+                    {/* Design Preferences */}
+                    <td className="p-6 text-sm text-gray-600 max-w-xs truncate">
+                      {order.portfolio_content?.[0]?.design_preferences ||
+                        "None specified"}
                     </td>
+
+                    {/* Date */}
                     <td className="p-6 text-sm text-gray-600">
                       {new Date(order.created_at).toLocaleDateString("en-GB")}
                     </td>
-                    <td className="p-6">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                          order.payment_status === "pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : order.payment_status === "in progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {order.payment_status}
-                      </span>
-                    </td>
+
+                    {/* Status Update Dropdown */}
                     <td className="p-6">
                       <select
                         value={order.payment_status}
@@ -183,6 +219,19 @@ export default function AdminDashboard() {
                         <option value="in progress">In Progress</option>
                         <option value="completed">Completed</option>
                       </select>
+                    </td>
+
+                    {/* Download Button */}
+                    <td className="p-6">
+                      <button
+                        onClick={() => handleDownloadFiles(order.user_id)}
+                        disabled={downloadingId === order.user_id}
+                        className="text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {downloadingId === order.user_id
+                          ? "Fetching..."
+                          : "Download Files"}
+                      </button>
                     </td>
                   </tr>
                 ))}
