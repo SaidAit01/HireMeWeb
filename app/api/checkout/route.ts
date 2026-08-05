@@ -3,7 +3,7 @@ import Stripe from "stripe";
 
 // 1. Initialise Stripe outside the handler so it can be reused efficiently
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20", // Use the latest API version or your account's default
+  apiVersion: "2024-06-20" as any, // The 'as any' fixes the TypeScript error
 });
 
 export async function POST(request: Request) {
