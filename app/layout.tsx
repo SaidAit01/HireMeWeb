@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar"; // <-- Import it here
+import { Navbar } from "@/components/Navbar";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +26,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body
+        className="min-h-screen flex flex-col bg-gray-50"
+        suppressHydrationWarning
+      >
+        {/* THIS IS THE MISSING PIECE! */}
+        <Navbar />
+
         {children}
+
+        <Analytics />
       </body>
     </html>
   );
