@@ -20,6 +20,7 @@ interface OrderWithUser {
   id: string;
   created_at: string;
   payment_status: "pending" | "in progress" | "completed";
+  client_notes?: string | null; // <-- ADDED THIS LINE
   tier?: string;
   user_id: string;
   users: {
@@ -65,11 +66,12 @@ export default function AdminDashboard() {
           user_id,
           created_at,
           payment_status,
+          client_notes,       
           users (
             full_name,
             email
           )
-        `,
+        `, // <-- ADDED client_notes HERE
         )
         .order("created_at", { ascending: false });
 
@@ -210,6 +212,12 @@ export default function AdminDashboard() {
                   >
                     <td className="py-4 px-4 sm:px-6 font-medium text-gray-900">
                       {order.users?.full_name || "Name not provided"}
+                      {/* Optional: Add a tiny indicator here if there's a note */}
+                      {order.client_notes && (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                          Note
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 sm:px-6 text-gray-500">
                       {order.users?.email || "—"}
@@ -291,6 +299,25 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-6 text-sm">
+                  {/* NEW: DISPLAY CLIENT NOTES (UPDATE REQUESTS) */}
+                  {selectedOrder.client_notes && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0 text-lg">
+                          ⚠️
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-amber-900 mb-1">
+                            Update Request from Client
+                          </h3>
+                          <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
+                            {selectedOrder.client_notes}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Academic Background */}
                   <section className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
