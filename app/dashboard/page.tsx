@@ -17,7 +17,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        // 1. Get Active Session
+        // 1. Get Active Session from the Magic Link
         const {
           data: { session },
           error: sessionError,
@@ -28,11 +28,26 @@ export default function StudentDashboard() {
           return;
         }
 
-        // 2. Fetch the User's Order Status
+        // 2. THE FIX: Find their 'Lead' account in public.users using their email!
+        const { data: publicUser } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .eq("email", session.user.email)
+          .single();
+
+        if (!publicUser) {
+          // If they haven't bought anything yet
+          setLoading(false);
+          return;
+        }
+
+        setUserName(publicUser.full_name);
+
+        // 3. Fetch the User's Order Status using their Lead ID
         const { data: orderData } = await supabase
           .from("orders")
           .select("*")
-          .eq("user_id", session.user.id)
+          .eq("user_id", publicUser.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .single();
@@ -41,24 +56,15 @@ export default function StudentDashboard() {
           setOrder(orderData);
         }
 
-        // 3. Fetch the Profile ID (To generate their unique website link)
+        // 4. Fetch the Profile ID (To generate their unique website link)
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, users(full_name)")
-          .eq("user_id", session.user.id)
+          .select("id")
+          .eq("user_id", publicUser.id)
           .single();
 
         if (profileData) {
           setProfileId(profileData.id);
-
-          const profileUsers = (profileData as any).users;
-          const fullName = Array.isArray(profileUsers)
-            ? profileUsers[0]?.full_name
-            : profileUsers?.full_name;
-
-          if (fullName) {
-            setUserName(fullName);
-          }
         }
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -68,6 +74,19 @@ export default function StudentDashboard() {
     }
 
     loadDashboard();
+
+    // 5. This ensures the dashboard updates the second a Magic Link is clicked
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN") {
+          loadDashboard();
+        }
+      },
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [router]);
 
   if (loading) {
@@ -99,7 +118,7 @@ export default function StudentDashboard() {
               await supabase.auth.signOut();
               router.replace("/login");
             }}
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors bg-white border border-gray-200 px-4 py-2 rounded-lg shadow-sm"
           >
             Sign Out
           </button>
@@ -168,7 +187,6 @@ export default function StudentDashboard() {
         {order && order.payment_status === "completed" && profileId && (
           <div className="space-y-6">
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 sm:p-10 rounded-3xl shadow-xl text-white relative overflow-hidden">
-              {/* Decorative background circles */}
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-white opacity-5 rounded-full blur-2xl"></div>
               <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-400 opacity-20 rounded-full blur-2xl"></div>
 
@@ -186,7 +204,6 @@ export default function StudentDashboard() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Link to the dynamic route we built earlier */}
                   <a
                     href={`/portfolio/${profileId}`}
                     target="_blank"
@@ -196,10 +213,11 @@ export default function StudentDashboard() {
                     View Live Website ↗
                   </a>
 
-                  {/* Link to the QR Card */}
                   <a
                     href={`/portfolio/${profileId}/card`}
-                    className="bg-blue-700/50 hover:bg-blue-700 text-white border border-blue-500/30 px-6 py-3.5 rounded-xl font-bold text-sm transition-all text-center flex items-center justify-center gap-2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-700/60 hover:bg-blue-700 text-white border border-blue-400/30 px-6 py-3.5 rounded-xl font-bold text-sm transition-all text-center flex items-center justify-center gap-2"
                   >
                     📱 Open Mobile QR Card
                   </a>
@@ -207,7 +225,6 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Recruiter Analytics Teaser */}
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl border border-emerald-100">
