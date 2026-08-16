@@ -24,9 +24,28 @@ export default async function StudentPortfolio({
     .eq("id", id)
     .single();
 
-  // 2. If the URL is wrong or the profile doesn't exist, show a 404 page
+  // 2. DEBUG MODE: Show us exactly why it is failing!
   if (error || !profile) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-red-50 p-10">
+        <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl border border-red-200 shadow-xl">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            🚨 Supabase Fetch Failed
+          </h1>
+          <p className="font-mono text-sm mb-2">
+            <strong>ID we searched for:</strong> {id}
+          </p>
+          <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs overflow-auto">
+            {JSON.stringify(error, null, 2)}
+          </div>
+          <p className="mt-4 text-sm text-gray-600">
+            If the black box says <strong>"Row not found"</strong> or empty, it
+            means the ID is wrong, OR your database security (RLS) is blocking
+            the public from reading it.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // 3. Parse the projects (stored as JSONB in Supabase) safely
