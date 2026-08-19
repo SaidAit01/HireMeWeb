@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Analytics } from "@vercel/analytics/react";
+import { Footer } from "../components/Footer"; // You correctly imported this!
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,12 +31,15 @@ export default function RootLayout({
         className="min-h-screen flex flex-col bg-gray-50"
         suppressHydrationWarning
       >
-        {/* THIS IS THE MISSING PIECE! */}
         <Navbar />
 
-        {children}
+        {/* flex-grow pushes the footer to the bottom of the screen on short pages */}
+        <main className="flex-grow">{children}</main>
 
         <Analytics />
+
+        {/* ADDED THE FOOTER HERE! */}
+        <Footer />
       </body>
     </html>
   );

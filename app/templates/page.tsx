@@ -11,134 +11,94 @@ export default function TemplatesPage() {
             <span className="text-blue-600">Architectures</span>
           </h1>
           <p className="text-lg text-gray-600 leading-relaxed">
-            We don't use bloated website builders. Below are our live
-            foundational architectures. Depending on your chosen{" "}
-            <strong>Tier</strong>, we adapt the colors, typography, and content
-            structure to perfectly match your industry and personal brand.
+            Below are examples of the design architectures we use to build your
+            site. Depending on your chosen <strong>Tier</strong>, we adapt the
+            colors, typography, and content structure to perfectly match your
+            industry and personal brand.
           </p>
         </div>
 
-        {/* HOW IT ADAPTS SECTION */}
-        <div className="grid md:grid-cols-3 gap-6 mb-20">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl mb-3">🎨</div>
-            <h3 className="font-bold text-gray-900 mb-2">Custom Branding</h3>
-            <p className="text-sm text-gray-600">
-              Your chosen color palette, fonts, and visual identity are applied
-              to the base structure.
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl mb-3">⚙️</div>
-            <h3 className="font-bold text-gray-900 mb-2">
-              Tier-Based Features
-            </h3>
-            <p className="text-sm text-gray-600">
-              Standard and Complex tiers unlock custom domains, advanced
-              analytics, and deeper case studies.
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl mb-3">📱</div>
-            <h3 className="font-bold text-gray-900 mb-2">
-              Responsive by Default
-            </h3>
-            <p className="text-sm text-gray-600">
-              Every adaptation perfectly resizes for mobile, ensuring your
-              Digital Networking Card looks flawless.
-            </p>
-          </div>
-        </div>
-
-        {/* LIVE EXAMPLES GRID */}
+        {/* STATIC IMAGE MOCKUPS (No Database Links!) */}
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Persona 1: Software Engineer */}
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full">
-            <div className="p-8 flex-grow">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-xl border border-blue-100">
-                💻
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          {/* Persona 1: The Technologist */}
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="p-6 pb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">
                 The Technologist
               </h3>
-              <p className="text-sm font-semibold text-blue-600 mb-4">
-                Live Example: Software Engineering
-              </p>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Adapted for technical roles. Heavily emphasizes GitHub
-                repositories, tech stacks, and live project links. Features
-                high-contrast, modern styling.
+              <p className="text-xs font-semibold text-blue-600">
+                Architecture for Engineering
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 bg-gray-50 mt-auto">
-              {/* NOTE: Replace 'INSERT-DAVIDS-ID-HERE' with the real Supabase ID */}
-              <Link
-                href="/portfolio/2fc2b954-1c8f-4e43-84cd-df83b8a1f134"
-                target="_blank"
-                className="block w-full py-3 px-4 bg-white border border-gray-300 rounded-xl text-center font-bold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors shadow-sm"
-              >
-                View Live Example ↗
-              </Link>
+            <div className="relative border-t border-gray-100 bg-gray-100 h-96 group">
+              {/* Mock Browser Bar */}
+              <div className="absolute top-0 w-full bg-white/90 backdrop-blur-sm px-3 py-2 flex gap-1.5 border-b border-gray-200 z-10">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+              </div>
+              <div className="absolute top-7 w-full h-[calc(100%-28px)] overflow-y-auto scrollbar-hide">
+                {/* Image 1 */}
+                <img
+                  src="templates/tech.webp"
+                  alt="Tech Portfolio Preview"
+                  className="w-full object-cover"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Persona 2: Finance / Corporate */}
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full">
-            <div className="p-8 flex-grow">
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6 text-xl border border-emerald-100">
-                📊
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          {/* Persona 2: The Analyst */}
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="p-6 pb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">
                 The Analyst
               </h3>
-              <p className="text-sm font-semibold text-emerald-600 mb-4">
-                Live Example: Corporate Finance
-              </p>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Engineered for Finance, Consulting, and Business graduates.
-                Focuses on clean typography, ROI metrics, academic achievements,
-                and executive summaries.
+              <p className="text-xs font-semibold text-emerald-600">
+                Architecture for Finance
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 bg-gray-50 mt-auto">
-              {/* NOTE: Replace 'INSERT-SARAHS-ID-HERE' with the real Supabase ID */}
-              <Link
-                href="/portfolio/Iaa06ea8a-bbc6-4f69-8fa6-b35982ee407d"
-                target="_blank"
-                className="block w-full py-3 px-4 bg-white border border-gray-300 rounded-xl text-center font-bold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors shadow-sm"
-              >
-                View Live Example ↗
-              </Link>
+            <div className="relative border-t border-gray-100 bg-gray-100 h-96 group">
+              <div className="absolute top-0 w-full bg-white/90 backdrop-blur-sm px-3 py-2 flex gap-1.5 border-b border-gray-200 z-10">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+              </div>
+              <div className="absolute top-7 w-full h-[calc(100%-28px)] overflow-y-auto scrollbar-hide">
+                {/* Image 2 */}
+                <img
+                  src="templates/analyst.avif"
+                  alt="Finance Portfolio Preview"
+                  className="w-full object-cover"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Persona 3: Creative / Marketing */}
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full">
-            <div className="p-8 flex-grow">
-              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-6 text-xl border border-purple-100">
-                ✨
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          {/* Persona 3: The Creative */}
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="p-6 pb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">
                 The Creative
               </h3>
-              <p className="text-sm font-semibold text-purple-600 mb-4">
-                Live Example: Marketing & Design
-              </p>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Adapted for visually driven roles. Utilizes bold color accents,
-                expansive project galleries, and narrative-driven case studies
-                to showcase creative flair.
+              <p className="text-xs font-semibold text-purple-600">
+                Architecture for Marketing
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 bg-gray-50 mt-auto">
-              {/* NOTE: Replace 'INSERT-EMMAS-ID-HERE' with the real Supabase ID */}
-              <Link
-                href="/portfolio/d596c374-643b-4a71-8d90-ec1a6a1f67f5"
-                target="_blank"
-                className="block w-full py-3 px-4 bg-white border border-gray-300 rounded-xl text-center font-bold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors shadow-sm"
-              >
-                View Live Example ↗
-              </Link>
+            <div className="relative border-t border-gray-100 bg-gray-100 h-96 group">
+              <div className="absolute top-0 w-full bg-white/90 backdrop-blur-sm px-3 py-2 flex gap-1.5 border-b border-gray-200 z-10">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+              </div>
+              <div className="absolute top-7 w-full h-[calc(100%-28px)] overflow-y-auto scrollbar-hide">
+                {/* Image 3 */}
+                <img
+                  src="templates/creative.avif"
+                  alt="Creative Portfolio Preview"
+                  className="w-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>
