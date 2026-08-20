@@ -1,4 +1,3 @@
-import Link from "next/link";
 import clsx from "clsx";
 
 const tiers = [
@@ -14,6 +13,8 @@ const tiers = [
       "2-3 Days delivery",
     ],
     recommended: false,
+    // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
+    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
   },
   {
     name: "Standard",
@@ -27,6 +28,8 @@ const tiers = [
       "5-7 Days delivery",
     ],
     recommended: true,
+    // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
+    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
   },
   {
     name: "Complex",
@@ -40,6 +43,8 @@ const tiers = [
       "10-14 Days delivery",
     ],
     recommended: false,
+    // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
+    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
   },
 ];
 
@@ -108,8 +113,10 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/onboarding"
+
+              {/* THE WORKING BUTTON */}
+              <a
+                href={tier.paymentLink}
                 className={clsx(
                   tier.recommended
                     ? "bg-blue-600 text-white hover:bg-blue-700"
@@ -118,7 +125,7 @@ export function Pricing() {
                 )}
               >
                 Select {tier.name}
-              </Link>
+              </a>
             </div>
           ))}
         </div>
