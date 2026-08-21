@@ -29,7 +29,7 @@ export default function ContactPage() {
                   hello@hiremeweb.co.uk
                 </a>
                 <p className="text-sm text-gray-500 mt-2">
-                  We aim to respond to all graduate inquiries within 24 hours.
+                  We aim to respond to all inquiries within 24 hours.
                 </p>
               </div>
 
@@ -47,7 +47,8 @@ export default function ContactPage() {
                 </h3>
                 <p className="text-gray-900 font-medium">HireMeWeb UK</p>
                 <p className="text-gray-500 text-sm">
-                  Dedicated to helping UK graduates launch their careers.
+                  Dedicated to helping UK students and graduates launch their
+                  careers.
                 </p>
               </div>
             </div>

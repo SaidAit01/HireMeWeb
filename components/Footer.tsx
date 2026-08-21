@@ -45,7 +45,7 @@ export function Footer() {
                   href="/login"
                   className="hover:text-blue-600 transition-colors"
                 >
-                  Student Login
+                  Login
                 </Link>
               </li>
             </ul>

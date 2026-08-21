@@ -17,11 +17,19 @@ interface StudentProfile {
 }
 
 interface OrderWithUser {
+  tier_id: string;
   id: string;
   created_at: string;
-  payment_status: "pending" | "in progress" | "completed";
-  client_notes?: string | null; // <-- ADDED THIS LINE
+  payment_status:
+    | "pending"
+    | "in progress"
+    | "awaiting_final_payment"
+    | "completed";
+  client_notes?: string | null;
+  draft_feedback?: string | null; // 🔥 NEW
+  draft_link?: string | null; // 🔥 NEW
   tier?: string;
+  project_step?: number;
   user_id: string;
   users: {
     full_name: string | null;
@@ -34,6 +42,8 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [draftLinkInput, setDraftLinkInput] = useState("");
+  const [savingLink, setSavingLink] = useState(false);
 
   // Modal & Inspector State
   const [selectedOrder, setSelectedOrder] = useState<OrderWithUser | null>(
@@ -42,6 +52,7 @@ export default function AdminDashboard() {
   const [profileData, setProfileData] = useState<StudentProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [cvDownloadUrl, setCvDownloadUrl] = useState<string | null>(null);
+
   const ADMIN_EMAIL =
     process.env.NEXT_PUBLIC_ADMIN_EMAIL || "your.email@example.com";
 
@@ -66,12 +77,14 @@ export default function AdminDashboard() {
           user_id,
           created_at,
           payment_status,
-          client_notes,       
+          client_notes,
+          tier_id,
+          project_step,
           users (
             full_name,
             email
           )
-        `, // <-- ADDED client_notes HERE
+        `,
         )
         .order("created_at", { ascending: false });
 
@@ -94,9 +107,9 @@ export default function AdminDashboard() {
     setLoadingProfile(true);
     setProfileData(null);
     setCvDownloadUrl(null);
+    setDraftLinkInput(order.draft_link || "");
 
     try {
-      // A. Query the user profile intake data
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -109,12 +122,11 @@ export default function AdminDashboard() {
 
       setProfileData(profile || null);
 
-      // B. Create a secure Signed URL for the CV if it exists
       if (profile?.cv_file_path) {
         const { data: signedUrlData, error: signedUrlError } =
           await supabase.storage
             .from("cv_uploads")
-            .createSignedUrl(profile.cv_file_path, 300); // 300 seconds = 5 minutes expiry
+            .createSignedUrl(profile.cv_file_path, 300);
 
         if (!signedUrlError && signedUrlData) {
           setCvDownloadUrl(signedUrlData.signedUrl);
@@ -127,13 +139,13 @@ export default function AdminDashboard() {
     }
   };
 
-  // 3. Mark Status as Completed
-  const markAsCompleted = async (orderId: string) => {
+  // 3. Mark Status (In Progress -> Awaiting Payment -> Completed)
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
     try {
       const { error } = await supabase
         .from("orders")
-        .update({ payment_status: "completed" })
+        .update({ payment_status: newStatus })
         .eq("id", orderId);
 
       if (error) throw error;
@@ -141,19 +153,47 @@ export default function AdminDashboard() {
       setOrders((prev) =>
         prev.map((order) =>
           order.id === orderId
-            ? { ...order, payment_status: "completed" }
+            ? { ...order, payment_status: newStatus as any }
             : order,
         ),
       );
 
       if (selectedOrder?.id === orderId) {
         setSelectedOrder((prev) =>
-          prev ? { ...prev, payment_status: "completed" } : null,
+          prev ? { ...prev, payment_status: newStatus as any } : null,
         );
       }
     } catch (err: unknown) {
       console.error("Failed to update status:", err);
       alert("Could not update the order.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // 4. Update the Student's Live Progress Bar
+  const updateProjectStep = async (orderId: string, newStep: number) => {
+    setUpdatingId(orderId);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ project_step: newStep })
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId ? { ...o, project_step: newStep } : o,
+        ),
+      );
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) =>
+          prev ? { ...prev, project_step: newStep } : null,
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update step:", err);
     } finally {
       setUpdatingId(null);
     }
@@ -168,6 +208,34 @@ export default function AdminDashboard() {
         </div>
       </div>
     );
+  }
+  const handleSaveDraftLink = async (orderId: string) => {
+    setSavingLink(true);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ draft_link: draftLinkInput })
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      // Update local state
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId ? { ...o, draft_link: draftLinkInput } : o,
+        ),
+      );
+      alert("Staging link saved and sent to student dashboard!");
+    } catch (err) {
+      console.error("Failed to save draft link:", err);
+      alert("Error saving link.");
+    } finally {
+      setSavingLink(false);
+    }
+  };
+
+  function markAsCompleted(id: string): void {
+    throw new Error("Function not implemented.");
   }
 
   return (
@@ -198,7 +266,7 @@ export default function AdminDashboard() {
               <thead className="bg-gray-50/80 border-b border-gray-200 text-gray-900 text-xs uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="py-3.5 px-4 sm:px-6">Client</th>
-                  <th className="py-3.5 px-4 sm:px-6">Contact</th>
+                  <th className="py-3.5 px-4 sm:px-6">Tier</th>
                   <th className="py-3.5 px-4 sm:px-6">Ordered On</th>
                   <th className="py-3.5 px-4 sm:px-6">Status</th>
                   <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
@@ -212,15 +280,14 @@ export default function AdminDashboard() {
                   >
                     <td className="py-4 px-4 sm:px-6 font-medium text-gray-900">
                       {order.users?.full_name || "Name not provided"}
-                      {/* Optional: Add a tiny indicator here if there's a note */}
                       {order.client_notes && (
                         <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
                           Note
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-4 sm:px-6 text-gray-500">
-                      {order.users?.email || "—"}
+                    <td className="py-4 px-4 sm:px-6 text-gray-500 capitalize">
+                      {order.tier_id || "Standard"}
                     </td>
                     <td className="py-4 px-4 sm:px-6 text-gray-500">
                       {new Date(order.created_at).toLocaleDateString("en-GB", {
@@ -234,12 +301,14 @@ export default function AdminDashboard() {
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                           order.payment_status === "pending"
                             ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : order.payment_status === "in progress"
-                              ? "bg-blue-50 text-blue-700 border border-blue-200"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : order.payment_status === "awaiting_final_payment"
+                              ? "bg-purple-50 text-purple-700 border border-purple-200"
+                              : order.payment_status === "in progress"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         }`}
                       >
-                        {order.payment_status}
+                        {order.payment_status.replace("_", " ")}
                       </span>
                     </td>
                     <td className="py-4 px-4 sm:px-6 text-right space-x-2">
@@ -249,17 +318,6 @@ export default function AdminDashboard() {
                       >
                         Inspect Details
                       </button>
-                      {order.payment_status === "in progress" && (
-                        <button
-                          onClick={() => markAsCompleted(order.id)}
-                          disabled={updatingId === order.id}
-                          className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all disabled:opacity-50"
-                        >
-                          {updatingId === order.id
-                            ? "Saving..."
-                            : "Mark Complete"}
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -299,7 +357,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-6 text-sm">
-                  {/* NEW: DISPLAY CLIENT NOTES (UPDATE REQUESTS) */}
+                  {/* CLIENT NOTES / UPDATE REQUESTS */}
                   {selectedOrder.client_notes && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
                       <div className="flex items-start gap-4">
@@ -317,6 +375,85 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+
+                  {/* PROGRESS BAR UPDATER (Admin Controls) */}
+
+                  <section className="bg-white rounded-xl p-5 border border-blue-200 shadow-sm space-y-3">
+                    <h3 className="text-sm font-bold text-gray-900">
+                      Push Project Update to Client
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      This instantly updates the progress tracker on the
+                      student's dashboard.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[1, 2, 3, 4].map((step) => (
+                        <button
+                          key={step}
+                          onClick={() =>
+                            updateProjectStep(selectedOrder.id, step)
+                          }
+                          disabled={updatingId === selectedOrder.id}
+                          className={`py-2 text-xs font-bold rounded-lg transition-all border ${
+                            (selectedOrder.project_step || 1) === step
+                              ? "bg-blue-50 border-blue-200 text-blue-700 shadow-inner"
+                              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                          } disabled:opacity-50`}
+                        >
+                          Step {step}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                  {/* 🔍 FIRST DRAFT & FEEDBACK INSPECTOR */}
+                  <section className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-indigo-900">
+                      First Draft Staging & Feedback
+                    </h3>
+
+                    {/* 1. Input to generate/paste Vercel Staging Link */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-700 block">
+                        Vercel Private Staging URL
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={draftLinkInput}
+                          onChange={(e) => setDraftLinkInput(e.target.value)}
+                          placeholder="https://hiremeweb-staging-xyz.vercel.app"
+                          className="w-full text-xs rounded-xl border border-indigo-200 px-3 py-2 bg-white text-gray-900 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <button
+                          onClick={() => handleSaveDraftLink(selectedOrder.id)}
+                          disabled={savingLink}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm shrink-0 transition-all disabled:opacity-50"
+                        >
+                          {savingLink ? "Saving..." : "Push Link"}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-gray-500">
+                        Pushing this link automatically unlocks the review panel
+                        on the student's dashboard (Step 3).
+                      </p>
+                    </div>
+
+                    {/* 2. Display Student Feedback if they submitted any */}
+                    {selectedOrder.draft_feedback ? (
+                      <div className="bg-white border border-indigo-200 rounded-xl p-4 space-y-1 shadow-sm">
+                        <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">
+                          💬 Student Revision Feedback Received:
+                        </span>
+                        <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                          {selectedOrder.draft_feedback}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-gray-400 italic">
+                        No revision feedback submitted by the student yet.
+                      </div>
+                    )}
+                  </section>
 
                   {/* Academic Background */}
                   <section className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
@@ -403,11 +540,44 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Modal Footer Actions */}
-            <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+            {/* ALWAYS VISIBLE ADMIN CONTROLS (Override Status) */}
+            <div className="pt-6 mt-8 border-t border-gray-100 flex flex-col gap-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                Force Status Change
+              </h3>
+
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  onClick={() =>
+                    updateOrderStatus(selectedOrder.id, "in progress")
+                  }
+                  className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-lg text-xs"
+                >
+                  Set: In Progress
+                </button>
+                <button
+                  onClick={() =>
+                    updateOrderStatus(
+                      selectedOrder.id,
+                      "awaiting_final_payment",
+                    )
+                  }
+                  className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-bold rounded-lg text-xs"
+                >
+                  Request 50% Payment
+                </button>
+              </div>
+
+              <button
+                onClick={() => updateOrderStatus(selectedOrder.id, "completed")}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm text-sm"
+              >
+                Mark Fully Paid & Unlock
+              </button>
+
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900"
+                className="w-full py-3 text-sm text-gray-500 hover:text-gray-800 font-semibold transition-colors mt-2"
               >
                 Close Panel
               </button>

@@ -8,7 +8,7 @@ export default function Home() {
       <section className="w-full px-6 py-24 sm:py-32 flex flex-col items-center text-center">
         <div className="mb-8 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-800 shadow-sm">
           <span className="flex h-2.5 w-2.5 rounded-full bg-blue-600 mr-2 animate-pulse"></span>
-          Trusted by 100+ UK Graduates
+          Trusted by UK Students and Graduates
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -47,8 +47,8 @@ export default function Home() {
             How It Works
           </h2>
           <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-            From checkout to a live professional portfolio in under 48 hours. We
-            handle all the heavy lifting.
+            From checkout to a live professional portfolio, We handle all the
+            heavy lifting.
           </p>
         </div>
 

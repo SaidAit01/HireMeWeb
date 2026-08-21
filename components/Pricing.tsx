@@ -14,7 +14,7 @@ const tiers = [
     ],
     recommended: false,
     // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
-    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
+    paymentLink: "https://buy.stripe.com/cNibJ0dK8cZwaoo4pt4ZG00",
   },
   {
     name: "Standard",
@@ -29,7 +29,7 @@ const tiers = [
     ],
     recommended: true,
     // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
-    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
+    paymentLink: "https://buy.stripe.com/9B66oG7lK1gO7cc7BF4ZG01",
   },
   {
     name: "Complex",
@@ -44,7 +44,7 @@ const tiers = [
     ],
     recommended: false,
     // ↓ PUT YOUR LINK BETWEEN THE QUOTES BELOW ↓
-    paymentLink: "PUT_YOUR_PAYMENT_LINK_HERE",
+    paymentLink: "https://buy.stripe.com/cNibJ0dK8cZwaoo4pt4ZG00",
   },
 ];
 
