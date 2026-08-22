@@ -26,8 +26,8 @@ interface OrderWithUser {
     | "awaiting_final_payment"
     | "completed";
   client_notes?: string | null;
-  draft_feedback?: string | null; // 🔥 NEW
-  draft_link?: string | null; // 🔥 NEW
+  draft_feedback?: string | null;
+  draft_link?: string | null;
   tier?: string;
   project_step?: number;
   user_id: string;
@@ -69,6 +69,7 @@ export default function AdminDashboard() {
         return;
       }
 
+      // 🔥 FIXED: Added draft_feedback and draft_link to this query below!
       const { data, error } = await supabase
         .from("orders")
         .select(
@@ -78,6 +79,8 @@ export default function AdminDashboard() {
           created_at,
           payment_status,
           client_notes,
+          draft_feedback, 
+          draft_link,     
           tier_id,
           project_step,
           users (
@@ -199,16 +202,6 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-600 font-medium">
-          <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-          <span>Verifying credentials...</span>
-        </div>
-      </div>
-    );
-  }
   const handleSaveDraftLink = async (orderId: string) => {
     setSavingLink(true);
     try {
@@ -225,6 +218,11 @@ export default function AdminDashboard() {
           o.id === orderId ? { ...o, draft_link: draftLinkInput } : o,
         ),
       );
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) =>
+          prev ? { ...prev, draft_link: draftLinkInput } : null,
+        );
+      }
       alert("Staging link saved and sent to student dashboard!");
     } catch (err) {
       console.error("Failed to save draft link:", err);
@@ -235,7 +233,18 @@ export default function AdminDashboard() {
   };
 
   function markAsCompleted(id: string): void {
-    throw new Error("Function not implemented.");
+    // Placeholder function if needed
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-gray-600 font-medium">
+          <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+          <span>Verifying credentials...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -283,6 +292,11 @@ export default function AdminDashboard() {
                       {order.client_notes && (
                         <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
                           Note
+                        </span>
+                      )}
+                      {order.draft_feedback && (
+                        <span className="ml-2 text-xs bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
+                          Feedback
                         </span>
                       )}
                     </td>
@@ -405,6 +419,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </section>
+
                   {/* 🔍 FIRST DRAFT & FEEDBACK INSPECTOR */}
                   <section className="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-4">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-indigo-900">
